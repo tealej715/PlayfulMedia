@@ -1,0 +1,45 @@
+# macOS
+.DS_Store
+
+# Unreal Engine — generated / per-user / build artefacts
+# Based on Epic's recommended UE .gitignore.
+
+# Build / intermediate output
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+# IDE / editor project files (regenerated from .uproject)
+*.VC.db
+*.opensdf
+*.opendb
+*.sdf
+*.sln
+*.suo
+*.xcodeproj/
+*.xcworkspace/
+.vscode/
+.idea/
+.vs/
+
+# Local user settings
+*.opensdf
+*.opendb
+
+# Compiled binaries / packaged builds
+*.app/
+*.dmg
+*.exe
+*.dll
+*.dylib
+*.so
+*.pdb
+
+# Crash dumps
+*.dmp
+
+# Plugin build artefacts (keep source, ignore generated)
+Plugins/**/Binaries/
+Plugins/**/Intermediate/
