@@ -4,16 +4,23 @@
 // either a `property` (read/write a value on a Remote Control preset entity)
 // or a `function` (call a Blueprint function exposed on the preset).
 //
-// IMPORTANT: the `id` for property controls MUST match the **Property Label**
-// of the exposed entity inside the Remote Control preset (RCP_Dashboard).
-// That label is what UE sends back in PresetFieldsChanged events, and it's
-// what the bridge uses to look up which preset entity to PUT to.
+// `id` is the stable web-side key (used in the UI and by the browser <-> bridge
+// protocol). `ueId` (optional) is the actual address used when talking to UE:
+// either the GUID of the exposed entry or its `DisplayName`. If `ueId` is
+// omitted, `id` is used as the address.
 //
-// To add controls:
-//   1. In UE, open the preset (Content/RemoteControl/RCP_Dashboard) and expose
-//      the property/function from WBP_MainDashboard or MPC_Global.
-//   2. Note the auto-generated label (or rename it to something tidy).
-//   3. Add an entry below with that label as the `id`.
+// Why GUIDs? When you expose entries in an MPC, UE auto-names every scalar
+// "Scalar Parameters" and every vector "Vector Parameters" / "...(1)..." etc.
+// Renaming in the editor's Property ID column is purely cosmetic — the HTTP
+// API only resolves entries by their auto-name or unique GUID. GUIDs are
+// unambiguous, so we use them here.
+//
+// Find the GUIDs with:
+//   curl -s http://127.0.0.1:30010/remote/preset/RCP_Dashboard \
+//     | python3 -c "import json,sys
+// for g in json.load(sys.stdin)['Preset']['Groups']:
+//     for p in g['ExposedProperties']:
+//         print(p['ID'], p['DisplayName'], p['UnderlyingProperty']['Name'])"
 
 export const config = {
   // Bind address for the bridge HTTP/WS server. 0.0.0.0 = reachable on LAN.
@@ -38,30 +45,35 @@ export const config = {
   //
   // Entry shape:
   //   {
-  //     id:          <Property Label exactly as it appears in the preset>
-  //     label:       <Friendly text shown in the web UI>
+  //     id:          stable web-side key (used in URLs, UI, protocol)
+  //     ueId:        UE address — GUID of the exposed entry (preferred) OR
+  //                  its DisplayName. Omit to fall back to `id`.
+  //     label:       friendly text shown in the web UI
   //     category:    'Gauges' | 'Lights' | 'Theme' | 'Functions' | ...
   //     kind:        'number' | 'bool' | 'color' | 'function'
   //     min, max, step  (number kind only)
   //     args         (function kind only, optional default args object)
   //   }
-  // These ids match the parameter names in MPC_Global. When you expose each
-  // MPC parameter in RCP_Dashboard, UE auto-labels the entry with the
-  // parameter's name — so as long as you don't rename in the preset, these
-  // ids will line up.
   controls: [
     // Gauges (scalar)
-    { id: 'CurrentSpeed', label: 'Speed', category: 'Gauges', kind: 'number', min: 0, max: 1, step: 0.01 },
+    { id: 'CurrentSpeed', ueFunction: 'Set Speed', ueArg: 'Value',
+      label: 'Speed', category: 'Gauges', kind: 'number', min: 0, max: 1, step: 0.01 },
 
     // Theme palette (vector / LinearColor)
-    { id: 'ThemeColourPrimary',    label: 'Primary',    category: 'Theme', kind: 'color' },
-    { id: 'ThemeColourSecondary',  label: 'Secondary',  category: 'Theme', kind: 'color' },
-    { id: 'ThemeColourTertiary',   label: 'Tertiary',   category: 'Theme', kind: 'color' },
-    { id: 'ThemeColourQuaternary', label: 'Quaternary', category: 'Theme', kind: 'color' },
+    { id: 'ThemeColourPrimary',    ueFunction: 'Set Theme Primary',    ueArg: 'Value',
+      label: 'Primary',    category: 'Theme', kind: 'color' },
+    { id: 'ThemeColourSecondary',  ueFunction: 'Set Theme Secondary',  ueArg: 'Value',
+      label: 'Secondary',  category: 'Theme', kind: 'color' },
+    { id: 'ThemeColourTertiary',   ueFunction: 'Set Theme Tertiary',   ueArg: 'Value',
+      label: 'Tertiary',   category: 'Theme', kind: 'color' },
+    { id: 'ThemeColourQuaternary', ueFunction: 'Set Theme Quaternary', ueArg: 'Value',
+      label: 'Quaternary', category: 'Theme', kind: 'color' },
 
     // Text colours
-    { id: 'TextColourPrimary',   label: 'Text primary',   category: 'Text', kind: 'color' },
-    { id: 'TextColourSecondary', label: 'Text secondary', category: 'Text', kind: 'color' },
+    { id: 'TextColourPrimary',   ueFunction: 'Set Text Primary',   ueArg: 'Value',
+      label: 'Text primary',   category: 'Text', kind: 'color' },
+    { id: 'TextColourSecondary', ueFunction: 'Set Text Secondary', ueArg: 'Value',
+      label: 'Text secondary', category: 'Text', kind: 'color' },
 
     // --- Add WBP_MainDashboard properties/functions below as you expose them ---
     // { id: 'Headlights',    label: 'Headlights',    category: 'Lights',    kind: 'bool' },

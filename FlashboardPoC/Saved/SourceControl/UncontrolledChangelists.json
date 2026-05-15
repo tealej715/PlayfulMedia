@@ -5,6 +5,10 @@
 			"guid": "00000000000000000000000000000000",
 			"description": "Default Uncontrolled Changelist",
 			"files": [
+				"/Users/chunt/Projects/Student/PlayfulMedia/FlashboardPoC/Content/RemoteControl/RCP_Dashboard.uasset",
+				"/Users/chunt/Projects/Student/PlayfulMedia/FlashboardPoC/Content/Collections/MPC_Global.uasset",
+				"/Users/chunt/Projects/Student/PlayfulMedia/FlashboardPoC/Content/BP_DashboardController.uasset",
+				"/Users/chunt/Projects/Student/PlayfulMedia/FlashboardPoC/Content/ProofOfConcept.umap",
 				"C:/Users/566339/Downloads/FlashboardPoC/Content/ProofOfConcept.umap",
 				"C:/Users/566339/Downloads/FlashboardPoC/Content/Collections/MPC_Global.uasset",
 				"C:/Users/566339/Downloads/FlashboardPoC/Content/Materials/M_SpeedometerGauge.uasset",

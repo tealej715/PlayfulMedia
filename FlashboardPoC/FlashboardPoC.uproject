@@ -18,6 +18,10 @@
 		{
 			"Name": "RemoteControl",
 			"Enabled": true
+		},
+		{
+			"Name": "RemoteControlWebInterface",
+			"Enabled": true
 		}
 	]
 }
