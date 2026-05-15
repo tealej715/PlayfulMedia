@@ -1,0 +1,19 @@
+{
+  "name": "flashboard-webcontroller",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Web app + Node bridge to control the in-car UI of FlashboardPoC via Unreal Remote Control.",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.17.0"
+  }
+}
