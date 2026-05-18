@@ -17,8 +17,10 @@ const RECONNECT_MIN_MS = 1000;
 const RECONNECT_MAX_MS = 10000;
 
 export class UeClient extends EventEmitter {
-  constructor({ host, port, presetName }) {
+  constructor({ host, port, presetName, httpPort }) {
     super();
+    this.host = host;
+    this.httpPort = httpPort;
     this.url = `ws://${host}:${port}`;
     this.presetName = presetName;
     this.ws = null;
@@ -99,6 +101,12 @@ export class UeClient extends EventEmitter {
       return;
     }
 
+    // Log http.response so we can see if function calls succeeded.
+    if (type === 'http.response' || msg.ResponseCode !== undefined) {
+      log('http.response', msg.ResponseCode, typeof msg.ResponseBody === 'string' ? msg.ResponseBody.slice(0,200) : JSON.stringify(msg.ResponseBody || '').slice(0,200));
+      return;
+    }
+
     // Some UE versions emit a flatter shape on the WS subscription channel.
     // We pass anything unknown through as a debug event so issues are easy
     // to diagnose without re-deploying.
@@ -121,17 +129,22 @@ export class UeClient extends EventEmitter {
   }
 
   /** Call an exposed function by Remote Control preset Property Label. */
-  callFunction(propertyLabel, args = {}) {
-    const id = this.requestId++;
-    return this._send({
-      MessageName: 'http.request',
-      Id: id,
-      Parameters: {
-        Url: `/remote/preset/${encodeURIComponent(this.presetName)}/function/${encodeURIComponent(propertyLabel)}`,
-        Verb: 'PUT',
-        Body: { Parameters: args, GenerateTransaction: true },
-      },
-    });
+  async callFunction(propertyLabel, args = {}) {
+    const url = `http://${this.host}:${this.httpPort}/remote/preset/${encodeURIComponent(this.presetName)}/function/${encodeURIComponent(propertyLabel)}`;
+    log('callFunction', propertyLabel, JSON.stringify(args));
+    try {
+      const res = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ Parameters: args, GenerateTransaction: true }),
+      });
+      const text = await res.text();
+      log('callFunction response', res.status, text.slice(0, 200));
+      return res.ok;
+    } catch (err) {
+      log('callFunction error', err.message);
+      return false;
+    }
   }
 
   /** Snapshot of last-known values, suitable for hydrating new clients. */
