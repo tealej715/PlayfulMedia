@@ -42,6 +42,7 @@ const wss = new WebSocketServer({ server });
 const ue = new UeClient({
   host: config.ueHost,
   port: config.ueWsPort,
+  httpPort: config.ueHttpPort,
   presetName: config.presetName,
 });
 
@@ -57,7 +58,16 @@ ue.on('status', ({ connected }) => {
 });
 
 ue.on('fieldChanged', ({ propertyLabel, value }) => {
-  broadcast({ type: 'update', id: propertyLabel, value });
+  // UE addresses entries by their auto-generated DisplayName (e.g.
+  // "Vector Parameters (1)"), which collides across MPC array entries.
+  // Map back to a stable web-side `id` if we can; otherwise drop the event
+  // (the originating browser already updated optimistically, and the bridge
+  // echoes to other clients on the way in).
+  const ctrl = config.controls.find(
+    (c) => c.ueId === propertyLabel || c.id === propertyLabel,
+  );
+  if (!ctrl) return;
+  broadcast({ type: 'update', id: ctrl.id, value });
 });
 
 ue.on('debug', (msg) => {
@@ -89,9 +99,18 @@ wss.on('connection', (socket, req) => {
       console.warn('[bridge] unknown control id:', msg.id);
       return;
     }
+    console.log('[bridge] in:', msg.type, msg.id, '=>', JSON.stringify(msg.value ?? msg.args));
 
     if (msg.type === 'set' && ctrl.kind !== 'function') {
-      ue.setProperty(ctrl.id, msg.value);
+      if (ctrl.ueFunction) {
+        // Property-style UI (slider, color picker) but routed through an
+        // exposed Blueprint function. The function's input pin name is
+        // `ctrl.ueArg` (default 'Value').
+        const argName = ctrl.ueArg || 'Value';
+        ue.callFunction(ctrl.ueFunction, { [argName]: msg.value });
+      } else {
+        ue.setProperty(ctrl.ueId || ctrl.id, msg.value);
+      }
       // Echo to *other* clients so multiple browsers stay in sync without
       // waiting for UE's PresetFieldsChanged round-trip.
       const data = JSON.stringify({ type: 'update', id: ctrl.id, value: msg.value });
@@ -99,7 +118,7 @@ wss.on('connection', (socket, req) => {
         if (c !== socket && c.readyState === 1) c.send(data);
       }
     } else if (msg.type === 'call' && ctrl.kind === 'function') {
-      ue.callFunction(ctrl.id, msg.args || ctrl.args || {});
+      ue.callFunction(ctrl.ueFunction || ctrl.ueId || ctrl.id, msg.args || ctrl.args || {});
     }
   });
 
